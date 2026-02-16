@@ -5,7 +5,6 @@ import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import {useForm} from 'react-hook-form';
 import { login } from '../auth';
-import {useHistory} from 'react-router-dom';
 
 const Login = () => {
 
@@ -26,21 +25,18 @@ const Login = () => {
     };
 
     fetch('/auth/login', requestOptions)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Login failed');
-        }
-        return response.json();
-      })
+      .then(response => response.json())
       .then(data => {
         if (data.access_token) {
           login(data.access_token);
           navigate('/');
+        } else {
+          setLoginError(data.message || 'Invalid username or password');
         }
       })
       .catch(error => {
         console.log(error);
-        setLoginError('Invalid username or password');
+        setLoginError('Login failed. Please try again.');
       });
   };
 

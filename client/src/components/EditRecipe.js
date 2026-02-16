@@ -1,23 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth, authFetch } from '../auth';
 
-const CreateRecipe = () => {
+const EditRecipe = () => {
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
-  const [createError, setCreateError] = useState("");
+  const [editError, setEditError] = useState("");
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { id } = useParams();
   const [logged] = useAuth();
 
-  if (!logged) {
-    navigate('/login');
-    return null;
-  }
+  useEffect(() => {
+    const fetchRecipe = async () => {
+      try {
+        const response = await fetch(`/recipe/recipes/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to load recipe');
+        }
+        const data = await response.json();
+        reset({
+          title: data.title,
+          description: data.description
+        });
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching recipe:", error);
+        setEditError("Failed to load recipe");
+        setLoading(false);
+      }
+    };
+
+    fetchRecipe();
+  }, [id, reset]);
 
   const onSubmit = (data) => {
-    setCreateError("");
+    setEditError("");
     
     const recipeData = {
       title: data.title,
@@ -25,36 +45,39 @@ const CreateRecipe = () => {
     };
 
     const requestOptions = {
-      method: "POST",
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(recipeData)
     };
 
-    authFetch('/recipe/recipes', requestOptions)
+    authFetch(`/recipe/recipes/${id}`, requestOptions)
       .then(response => {
         if (!response.ok) {
           return response.json().then(data => {
-            throw new Error(data.message || 'Failed to create recipe');
+            throw new Error(data.message || 'Failed to update recipe');
           });
         }
         return response.json();
       })
       .then(data => {
-        console.log("Recipe created:", data);
-        reset();
+        console.log("Recipe updated:", data);
         navigate('/');
       })
       .catch(error => {
         console.log(error);
-        setCreateError(error.message || "Failed to create recipe. Please try again.");
+        setEditError(error.message || "Failed to update recipe. Please try again.");
       });
   };
+
+  if (loading) {
+    return <div className="container"><p>Loading recipe...</p></div>;
+  }
 
   return (
     <div className="container">
       <div className="form">
-        <h1>Create a New Recipe</h1>
-        {createError && <p style={{ color: 'red' }}><small>{createError}</small></p>}
+        <h1>Edit Recipe</h1>
+        {editError && <p style={{ color: 'red' }}><small>{editError}</small></p>}
         <form onSubmit={handleSubmit(onSubmit)}>
           <Form.Group>
             <Form.Label>Recipe Title</Form.Label>
@@ -79,11 +102,12 @@ const CreateRecipe = () => {
           {errors.description && <p style={{ color: 'red' }}><small>{errors.description.message}</small></p>}
           <br></br>
 
-          <Button variant="primary" type="submit">Create Recipe</Button>
+          <Button variant="primary" type="submit">Update Recipe</Button>
+          <Button variant="secondary" onClick={() => navigate('/')} style={{ marginLeft: '10px' }}>Cancel</Button>
         </form>
       </div>
     </div>
   );
 };
 
-export default CreateRecipe;
+export default EditRecipe;

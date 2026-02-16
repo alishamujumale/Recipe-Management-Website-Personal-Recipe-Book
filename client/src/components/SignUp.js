@@ -31,21 +31,24 @@ const SignUp = () => {
       };
       
       fetch('/auth/signup', requestOptions)
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(data => {
+              throw new Error(data.message || 'Signup failed');
+            });
+          }
+          return response.json();
+        })
         .then(data => {
           console.log(data);
-          if (data.message.includes("successfully")) {
-            setServerResponse(data.message);
-            setShow(true);
-            reset();
-            setTimeout(() => navigate('/login'), 2000);
-          } else {
-            setSignupError(data.message);
-          }
+          setServerResponse(data.message);
+          setShow(true);
+          reset();
+          setTimeout(() => navigate('/login'), 2000);
         })
         .catch(error => {
           console.log(error);
-          setSignupError("Signup failed. Please try again.");
+          setSignupError(error.message || "Signup failed. Please try again.");
         });
     }
     else {

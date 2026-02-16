@@ -1,5 +1,5 @@
 
-from flask import Flask, request,jsonify
+from flask import Flask, request
 from flask_restx import Api, Resource, fields,Namespace
 from werkzeug.security import generate_password_hash,check_password_hash
 from models import User
@@ -69,9 +69,10 @@ class Login(Resource):
             access_token=create_access_token(identity=db_user.username)
             refresh_token=create_refresh_token(identity=db_user.username)
 
-            return jsonify(
-                {"access_token":access_token,"refresh_token":refresh_token}
-            ), 200
+            return {
+                "access_token":access_token,
+                "refresh_token":refresh_token
+            }, 200
         else:
             return {"message": "Invalid username or password"}, 401
 @auth_ns.route('/refresh')
@@ -82,4 +83,4 @@ class RefreshResource(Resource):
         current_user = get_jwt_identity()
         new_access_token = create_access_token(identity=current_user)
 
-        return jsonify({"access_token": new_access_token}),200
+        return {"access_token": new_access_token}, 200
